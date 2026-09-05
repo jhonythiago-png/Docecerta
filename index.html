@@ -1087,24 +1087,51 @@ async function startApp(){
   renderToday();
 }
 
-supabase.auth.onAuthStateChange(async (event, session)=>{
-  if(session && session.user){
-    currentUser = session.user;
-    await startApp();
-  }else{
-    currentUser = null;
+// Trava de segurança: se por qualquer motivo (rede lenta, erro
+// inesperado) a tela de carregamento não sair sozinha, força a
+// exibição da tela de login depois de alguns segundos.
+const safetyTimeout = setTimeout(()=>{
+  if(!document.getElementById('loadingScreen').classList.contains('hidden')){
+    console.warn('Docecerta: tempo limite de carregamento atingido, exibindo tela de login.');
     showLoading(false);
-    showApp(false);
+    showAuthScreen(true);
+  }
+}, 6000);
+
+supabase.auth.onAuthStateChange(async (event, session)=>{
+  try{
+    clearTimeout(safetyTimeout);
+    if(session && session.user){
+      currentUser = session.user;
+      await startApp();
+    }else{
+      currentUser = null;
+      showLoading(false);
+      showApp(false);
+      showAuthScreen(true);
+    }
+  }catch(err){
+    console.error('Docecerta: erro no onAuthStateChange', err);
+    showLoading(false);
     showAuthScreen(true);
   }
 });
 
 (async function init(){
-  const { data } = await supabase.auth.getSession();
-  if(data && data.session && data.session.user){
-    currentUser = data.session.user;
-    await startApp();
-  }else{
+  try{
+    const { data, error } = await supabase.auth.getSession();
+    if(error) console.error('Docecerta: erro ao obter sessão', error);
+    clearTimeout(safetyTimeout);
+    if(data && data.session && data.session.user){
+      currentUser = data.session.user;
+      await startApp();
+    }else{
+      showLoading(false);
+      showAuthScreen(true);
+    }
+  }catch(err){
+    console.error('Docecerta: erro na inicialização', err);
+    clearTimeout(safetyTimeout);
     showLoading(false);
     showAuthScreen(true);
   }
