@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Docecerta</title>
+<meta name="description" content="Acompanhamento diário de medicamentos">
+<meta name="theme-color" content="#3F5C45">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Docecerta">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --paper:#F5F2EA;
+    --surface:#FFFDF9;
+    --ink:#2B3A32;
+    --ink-soft:#5C6B62;
+    --sage:#5C7F63;
+    --sage-deep:#3F5C45;
+    --berry:#B0555E;
+    --berry-soft:#F1DCDA;
+    --line:#DDD6C6;
+    --gold:#C79A4B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+  }
+  #app{
+    width:100%;
+    max-width:480px;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding-bottom:88px;
+    position:relative;
+  }
+
+  /* ---- Header ---- */
+  header{
+    padding:28px 20px 18px;
+  }
+  .eyebrow{
+    font-size:13px;
+    color:var(--sage-deep);
+    font-weight:600;
+    letter-spacing:0.02em;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:30px;
+    margin:2px 0 18px;
+    color:var(--ink);
+  }
+  .date-nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:12px 8px;
+  }
+  .date-nav button{
+    width:38px;height:38px;
+    border-radius:50%;
+    border:none;
+    background:transparent;
+    color:var(--sage-deep);
+    font-size:18px;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .date-nav button:active{background:var(--berry-soft);}
+  .date-label{
+    text-align:center;
+    flex:1;
+  }
+  .date-label .day{
+    font-family:'Fraunces',serif;
+    font-size:17px;
+    text-transform:capitalize;
+  }
+  .date-label .rel{
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-top:1px;
+  }
+
+  /* ---- Progress ---- */
+  .progress-card{
+    margin:16px 20px 4px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:18px 20px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+  }
+  .ring{
+    width:56px;height:56px;
+    flex-shrink:0;
+  }
+  .progress-text .n{
+    font-family:'Fraunces',serif;
+    font-size:20px;
+  }
+  .progress-text .l{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+
+  /* ---- Sections ---- */
+  main{flex:1;padding:8px 20px 0;}
+  .period{
+    margin-top:26px;
+  }
+  .period-title{
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:10px;
+    padding-left:2px;
+  }
+  .dose-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:14px 16px;
+    margin-bottom:10px;
+    cursor:pointer;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .dose-row.done{
+    background:#EFF3EC;
+    border-color:#CFE0D2;
+  }
+  .check{
+    width:26px;height:26px;
+    border-radius:50%;
+    border:2px solid var(--sage);
+    flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .dose-row.done .check{
+    background:var(--sage);
+  }
+  .check svg{
+    width:14px;height:14px;
+    opacity:0;
+    transform:scale(.6);
+    transition:opacity .15s ease, transform .15s ease;
+  }
+  .dose-row.done .check svg{opacity:1;transform:scale(1);}
+  .dose-info{flex:1; min-width:0;}
+  .dose-name{
+    font-weight:600;
+    font-size:15px;
+    color:var(--ink);
+  }
+  .dose-row.done .dose-name{
+    color:var(--ink-soft);
+    text-decoration:line-through;
+    text-decoration-color:#B7C7BA;
+  }
+  .dose-sub{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+  .dose-time{
+    font-size:12px;
+    color:var(--gold);
+    font-weight:600;
+    flex-shrink:0;
+  }
+
+  .empty-day{
+    text-align:center;
+    padding:60px 20px;
+    color:var(--ink-soft);
+  }
+  .empty-day .big{
+    font-family:'Fraunces',serif;
+    font-size:20px;
+    color:var(--ink);
+    margin-bottom:6px;
+  }
+
+  .celebrate{
+    margin:22px 20px 0;
+    background:linear-gradient(135deg,#F1DCDA,#F5F2EA);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px 18px;
+    text-align:center;
+    font-size:14px;
+    color:var(--sage-deep);
+    font-weight:500;
+  }
+
+  /* ---- History ---- */
+  .history-list{padding:6px 20px 20px;}
+  .h-item{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:13px 4px;
+    border-bottom:1px solid var(--line);
+  }
+  .h-date{width:78px; flex-shrink:0;}
+  .h-date .dow{font-size:12px;color:var(--ink-soft);text-transform:capitalize;}
+  .h-date .dnum{font-family:'Fraunces',serif;font-size:17px;}
+  .h-bar-wrap{flex:1;height:8px;background:#EAE5D8;border-radius:6px;overflow:hidden;}
+  .h-bar{height:100%;background:var(--sage);border-radius:6px;}
+  .h-count{font-size:12px;color:var(--ink-soft);width:44px;text-align:right;flex-shrink:0;}
+
+  /* ---- Settings ---- */
+  .settings-wrap{padding:6px 20px 30px;}
+  .set-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:16px;
+  }
+  .set-card h3{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:16px;
+    margin:0 0 6px;
+  }
+  .set-card p{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 14px;
+    line-height:1.5;
+  }
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{
+    padding:8px 14px;
+    border-radius:20px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    font-size:13px;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .chip.active{
+    background:var(--sage);
+    border-color:var(--sage);
+    color:#fff;
+  }
+  .toggle-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:var(--paper);
+    border-radius:12px;
+    padding:12px 14px;
+  }
+  .toggle-row span{font-size:14px;}
+  .switch{
+    width:44px;height:26px;
+    background:var(--line);
+    border-radius:20px;
+    position:relative;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .switch.on{background:var(--sage);}
+  .switch .knob{
+    width:20px;height:20px;
+    background:#fff;
+    border-radius:50%;
+    position:absolute;
+    top:3px;left:3px;
+    transition:left .15s ease;
+    box-shadow:0 1px 2px rgba(0,0,0,.2);
+  }
+  .switch.on .knob{left:21px;}
+  .mgroup-title{
+    font-size:11px;
+    font-weight:700;
+    color:var(--sage-deep);
+    letter-spacing:0.03em;
+    margin:14px 0 4px;
+  }
+  .mgroup-title:first-child{margin-top:0;}
+  .med-list-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+    font-size:13px;
+  }
+  .med-list-item:last-child{border-bottom:none;}
+  .med-list-item .mname{font-weight:600;}
+  .med-list-item .mfreq{color:var(--ink-soft);}
+  .reset-btn{
+    width:100%;
+    padding:12px;
+    border-radius:12px;
+    border:1px solid var(--sage);
+    background:var(--paper);
+    color:var(--sage-deep);
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .reset-btn:active{background:var(--sage); color:#fff;}
+
+  /* ---- Bottom nav ---- */
+  nav{
+    position:fixed;
+    bottom:0;left:50%;
+    transform:translateX(-50%);
+    width:100%;
+    max-width:480px;
+    background:var(--surface);
+    border-top:1px solid var(--line);
+    display:flex;
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    gap:6px;
+  }
+  .nav-btn{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:3px;
+    padding:6px 0;
+    border-radius:12px;
+    background:transparent;
+    border:none;
+    color:var(--ink-soft);
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .nav-btn.active{color:var(--sage-deep);}
+  .nav-btn svg{width:20px;height:20px;}
+
+  .hidden{display:none !important;}
+
+  /* ---- Loading ---- */
+  #loadingScreen{
+    position:fixed; inset:0;
+    background:var(--paper);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:14px;
+    z-index:50;
+  }
+  #loadingScreen img{width:64px;height:64px;border-radius:18px;}
+  #loadingScreen .spin{
+    width:22px;height:22px;
+    border:3px solid var(--line);
+    border-top-color:var(--sage);
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ---- Auth ---- */
+  #view-auth{
+    min-height:100vh;
+    display:flex; flex-direction:column;
+    justify-content:center;
+    padding:32px 24px;
+  }
+  .auth-logo{
+    width:64px;height:64px;
+    border-radius:18px;
+    margin:0 auto 18px;
+    display:block;
+    box-shadow:0 6px 18px rgba(63,92,69,.25);
+  }
+  .auth-title{
+    font-family:'Fraunces',serif;
+    font-size:28px;
+    text-align:center;
+    margin:0 0 4px;
+  }
+  .auth-sub{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:14px;
+    margin:0 0 28px;
+  }
+  .auth-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:24px;
+  }
+  .auth-field{margin-bottom:14px;}
+  .auth-field label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .auth-field input{
+    width:100%;
+    padding:13px 14px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:var(--paper);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    color:var(--ink);
+  }
+  .auth-field input:focus{outline:2px solid var(--sage); outline-offset:1px;}
+  .auth-submit{
+    width:100%;
+    padding:14px;
+    border-radius:12px;
+    border:none;
+    background:var(--sage-deep);
+    color:#fff;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    cursor:pointer;
+    margin-top:6px;
+  }
+  .auth-submit:active{opacity:.85;}
+  .auth-submit:disabled{opacity:.6;}
+  .auth-switch{
+    text-align:center;
+    margin-top:18px;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .auth-switch a{color:var(--sage-deep); font-weight:600; cursor:pointer; text-decoration:none;}
+  .auth-error{
+    background:var(--berry-soft);
+    color:var(--berry);
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:13px;
+    margin-bottom:14px;
+  }
+  .auth-notice{
+    background:#EFF3EC;
+    color:var(--sage-deep);
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:13px;
+    margin-bottom:14px;
+  }
+  .app-logo{
+    width:34px;height:34px;
+    border-radius:9px;
+    vertical-align:middle;
+    margin-right:8px;
+  }
+</style>
+</head>
+<body>
+
+<div id="loadingScreen">
+  <img src="icon-192.png" alt="Docecerta">
+  <div class="spin"></div>
+</div>
+
+<div id="view-auth" class="hidden">
+  <img src="icon-192.png" class="auth-logo" alt="Docecerta">
+  <div class="auth-title">Docecerta</div>
+  <div class="auth-sub" id="authSub">Entre para acompanhar seus medicamentos</div>
+  <div class="auth-card">
+    <div id="authError" class="auth-error hidden"></div>
+    <div id="authNotice" class="auth-notice hidden"></div>
+    <form id="authForm">
+      <div class="auth-field">
+        <label>E-mail</label>
+        <input type="email" id="authEmail" autocomplete="email" required>
+      </div>
+      <div class="auth-field">
+        <label>Senha</label>
+        <input type="password" id="authPassword" autocomplete="current-password" required minlength="6">
+      </div>
+      <button type="submit" class="auth-submit" id="authSubmitBtn">Entrar</button>
+    </form>
+    <div class="auth-switch">
+      <span id="authSwitchText">Ainda não tem conta?</span>
+      <a id="authSwitchLink">Criar conta</a>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+
+  <!-- ================= HOJE ================= -->
+  <div id="view-today">
+    <header>
+      <div class="eyebrow"><img src="icon-192.png" class="app-logo" alt="">Docecerta</div>
+      <h1>Poliana</h1>
+      <div class="date-nav">
+        <button id="prevDay" aria-label="Dia anterior">‹</button>
+        <div class="date-label">
+          <div class="day" id="dateDay">—</div>
+          <div class="rel" id="dateRel">—</div>
+        </div>
+        <button id="nextDay" aria-label="Próximo dia">›</button>
+      </div>
+    </header>
+
+    <div class="progress-card">
+      <svg class="ring" viewBox="0 0 56 56">
+        <circle cx="28" cy="28" r="24" fill="none" stroke="#EAE5D8" stroke-width="6"/>
+        <circle id="ringProgress" cx="28" cy="28" r="24" fill="none" stroke="#5C7F63" stroke-width="6"
+          stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="150.8"
+          transform="rotate(-90 28 28)"/>
+      </svg>
+      <div class="progress-text">
+        <div class="n" id="progressN">0 de 0</div>
+        <div class="l">doses registradas hoje</div>
+      </div>
+    </div>
+
+    <main id="doseList"></main>
+
+    <div id="celebrateMsg" class="celebrate hidden">Tudo certinho por hoje 🌿</div>
+  </div>
+
+  <!-- ================= HISTÓRICO ================= -->
+  <div id="view-history" class="hidden">
+    <header>
+      <div class="eyebrow">Últimos dias</div>
+      <h1>Histórico</h1>
+    </header>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <!-- ================= AJUSTES ================= -->
+  <div id="view-settings" class="hidden">
+    <header>
+      <div class="eyebrow">Personalizar</div>
+      <h1>Ajustes</h1>
+    </header>
+    <div class="settings-wrap">
+
+      <div class="set-card">
+        <h3>Vitamina D — dia da semana</h3>
+        <p>O colecalciferol é tomado uma vez por semana. Escolha o dia.</p>
+        <div class="chip-row" id="weekdayChips"></div>
+      </div>
+
+      <div class="set-card">
+        <h3>Testosterona — dias alternados</h3>
+        <p>O filme vaginal é aplicado em dias alternados. Marque se hoje é dia de aplicar, para o app calcular os próximos dias sozinho.</p>
+        <div class="toggle-row">
+          <span>Hoje é dia de aplicar</span>
+          <div class="switch" id="altToggle"><div class="knob"></div></div>
+        </div>
+      </div>
+
+      <div class="set-card">
+        <h3>Vitamina B12 — curso de 2 semanas</h3>
+        <p id="b12Info">1ª aplicação: — · 2ª aplicação: —</p>
+        <button id="b12ResetBtn" class="reset-btn">Marcar hoje como a 1ª aplicação</button>
+      </div>
+
+      <div class="set-card">
+        <h3>Todos os medicamentos</h3>
+        <p>Regime completo cadastrado a partir da receita.</p>
+        <div id="medFullList"></div>
+      </div>
+
+      <div class="set-card">
+        <h3>Conta</h3>
+        <p id="accountEmail">—</p>
+        <button id="logoutBtn" class="reset-btn">Sair</button>
+      </div>
+
+    </div>
+  </div>
+
+  <nav>
+    <button class="nav-btn active" data-view="today">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Hoje
+    </button>
+    <button class="nav-btn" data-view="history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg>
+      Histórico
+    </button>
+    <button class="nav-btn" data-view="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Ajustes
+    </button>
+  </nav>
+
+</div>
+
+<script>
+/* ================= DADOS DO REGIME ================= */
+const MEDICATIONS = [
+  { id:'oxandrolona', name:'Oxandrolona 1mg', formLabel:'Pastilha sublingual', category:'manipulado', freq:'daily',
+    doses:[
+      {period:'manha', label:'Antes do café · sob a língua', time:'06:30'},
+      {period:'noite', label:'Antes do jantar · sob a língua', time:'19:00'}
+    ]},
+  { id:'magnesio', name:'Complexo de Magnésio 100mg', formLabel:'Cápsula', category:'manipulado', freq:'daily',
+    doses:[
+      {period:'manha', label:'Antes do café', time:'06:30'},
+      {period:'meiodia', label:'Antes do almoço', time:'11:30'}
+    ]},
+  { id:'vitaminaD', name:'Vitamina D3 50.000UI', formLabel:'Cápsula oleosa', category:'manipulado', freq:'weekly',
+    doses:[{period:'manha', label:'Uma vez na semana', time:'08:00'}]},
+  { id:'omega3', name:'Ômega 3', formLabel:'3 cápsulas · uso contínuo', category:'manipulado', freq:'daily',
+    doses:[{period:'manha', label:'1 vez ao dia', time:'08:00'}]},
+  { id:'dim', name:'DIM 100mg', formLabel:'Cápsula', category:'manipulado', freq:'daily',
+    doses:[
+      {period:'manha', label:'A cada 12 horas', time:'08:00'},
+      {period:'noite', label:'A cada 12 horas', time:'20:00'}
+    ]},
+  { id:'gestrinona', name:'Gestrinona 1,5mg', formLabel:'Pastilha sublingual', category:'manipulado', freq:'mwf',
+    doses:[{period:'manha', label:'Seg, qua e sex · sob a língua', time:'08:00'}]},
+  { id:'testosterona', name:'Testosterona base 0,6% (filme vaginal)', formLabel:'Filme vaginal', category:'manipulado', freq:'alternate',
+    doses:[{period:'manha', label:'Dia sim, dia não', time:'08:00'}]},
+  { id:'systemPatch', name:'System 25mcg (adesivo)', formLabel:'Adesivo transdérmico', category:'farmacia', freq:'weekdays', freqDays:[1,4],
+    doses:[{period:'meiodia', label:'Região da virilha · alternar lado a cada aplicação', time:'—'}]},
+  { id:'ginobiotta', name:'Ginobiotta', formLabel:'Cápsula', category:'farmacia', freq:'daily',
+    doses:[{period:'meiodia', label:'1 vez ao dia', time:'—'}]},
+  { id:'diosmin', name:'Diosmin', formLabel:'Comprimido', category:'farmacia', freq:'daily',
+    doses:[{period:'meiodia', label:'1 vez ao dia', time:'—'}]},
+  { id:'b12', name:'Vitamina B12', formLabel:'Ampola intramuscular', category:'farmacia', freq:'course', courseInterval:7, courseTotal:2,
+    doses:[{period:'manha', label:'1x por semana', time:'—'}]},
+];
+
+const PERIODS = [
+  {key:'manha', label:'Manhã'},
+  {key:'meiodia', label:'Meio-dia'},
+  {key:'noite', label:'Noite'}
+];
+
+const WEEKDAYS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const WEEKDAYS_SHORT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+/* ================= ESTADO ================= */
+let currentDate = new Date();
+
+// Registro inicial conforme relatado: anteontem (03/09) só os de farmácia;
+// ontem (04/09) todos os de farmácia + todos os manipulados, mas os de 2x/dia
+// foram tomados uma única vez, à noite.
+const DEFAULT_DOSE_LOG = {
+  '2026-09-03': {
+    'systemPatch__0': true,
+    'ginobiotta__0': true,
+    'diosmin__0': true
+  },
+  '2026-09-04': {
+    'ginobiotta__0': true,
+    'diosmin__0': true,
+    'oxandrolona__1': true,
+    'magnesio__1': true,
+    'omega3__0': true,
+    'dim__1': true,
+    'gestrinona__0': true,
+    'testosterona__0': true
+  },
+  '2026-09-05': {
+    'b12__0': true
+  }
+};
+// weeklyDay 0=Dom..6=Sáb · altReferenceDate: um dia em que a testosterona foi aplicada (04/09, sexta)
+// b12Start: primeira aplicação da B12 (hoje, 05/09)
+const DEFAULT_SETTINGS = { weeklyDay: 1, altReferenceDate: '2026-09-04', b12Start: '2026-09-05' };
+
+let doseLog = {};      // { 'YYYY-MM-DD': { doseKey: true } }
+let settings = Object.assign({}, DEFAULT_SETTINGS);
+let currentView = 'today';
+
+function fmtDate(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function parseDate(s){
+  const [y,m,d]=s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function startOfDay(d){ const c=new Date(d); c.setHours(0,0,0,0); return c; }
+
+/* ================= SUPABASE ================= */
+const SUPABASE_URL = 'https://awtphgzqlzdoggfesgkl.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3dHBoZ3pxbHpkb2dnZmVzZ2tsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2MzIwMzAsImV4cCI6MjEwNDIwODAzMH0.FBlyMlQQSVuBOAmdsFLynZN-UNiJLoujGDksJJfVIHU';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let currentUser = null;
+
+/* ================= PERSISTÊNCIA ================= */
+async function loadData(){
+  const userId = currentUser.id;
+
+  // dose_log: uma linha por dose marcada como feita
+  const { data: doseRows, error: doseErr } = await supabase
+    .from('dose_log')
+    .select('date, dose_key')
+    .eq('user_id', userId);
+
+  if(doseErr){
+    console.error('Falha ao carregar registro de doses', doseErr);
+    doseLog = {};
+  }else{
+    doseLog = {};
+    (doseRows || []).forEach(row=>{
+      if(!doseLog[row.date]) doseLog[row.date] = {};
+      doseLog[row.date][row.dose_key] = true;
+    });
+  }
+
+  // user_settings: uma linha por usuário
+  const { data: settingsRow, error: settingsErr } = await supabase
+    .from('user_settings')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if(settingsErr){
+    console.error('Falha ao carregar ajustes', settingsErr);
+    settings = Object.assign({}, DEFAULT_SETTINGS);
+  }else if(settingsRow){
+    settings = {
+      weeklyDay: settingsRow.weekly_day,
+      altReferenceDate: settingsRow.alt_reference_date,
+      b12Start: settingsRow.b12_start
+    };
+  }else{
+    // Primeiro acesso: cria a linha de ajustes com os padrões
+    settings = Object.assign({}, DEFAULT_SETTINGS);
+    await saveSettings();
+  }
+}
+
+async function saveDoseLog(){
+  /* mantido apenas por compatibilidade; a gravação real acontece
+     dose a dose em toggleDose() para não reenviar tudo a cada clique */
+}
+
+async function saveSettings(){
+  const userId = currentUser.id;
+  const { error } = await supabase.from('user_settings').upsert({
+    user_id: userId,
+    weekly_day: settings.weeklyDay,
+    alt_reference_date: settings.altReferenceDate,
+    b12_start: settings.b12Start,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id' });
+  if(error) console.error('Falha ao salvar ajustes', error);
+}
+
+/* ================= LÓGICA DE AGENDA ================= */
+function isMedActiveOnDate(med, dateStr){
+  const d = parseDate(dateStr);
+  const dow = d.getDay();
+  if(med.freq === 'daily') return true;
+  if(med.freq === 'weekly') return dow === settings.weeklyDay;
+  if(med.freq === 'mwf') return [1,3,5].includes(dow);
+  if(med.freq === 'alternate'){
+    const ref = startOfDay(parseDate(settings.altReferenceDate));
+    const cur = startOfDay(d);
+    const diffDays = Math.round((cur - ref) / 86400000);
+    return ((diffDays % 2) + 2) % 2 === 0;
+  }
+  if(med.freq === 'weekdays') return (med.freqDays || []).includes(dow);
+  if(med.freq === 'course'){
+    const start = startOfDay(parseDate(settings.b12Start));
+    const cur = startOfDay(d);
+    const diffDays = Math.round((cur - start) / 86400000);
+    if(diffDays < 0 || diffDays % med.courseInterval !== 0) return false;
+    const occurrence = diffDays / med.courseInterval;
+    return occurrence < med.courseTotal;
+  }
+  return false;
+}
+
+function courseOccurrenceLabel(med, dateStr){
+  const start = startOfDay(parseDate(settings.b12Start));
+  const cur = startOfDay(parseDate(dateStr));
+  const diffDays = Math.round((cur - start) / 86400000);
+  const occurrence = Math.round(diffDays / med.courseInterval);
+  return `Aplicação ${occurrence + 1} de ${med.courseTotal}`;
+}
+
+function getDosesForDate(dateStr){
+  const list = [];
+  MEDICATIONS.forEach(med=>{
+    if(!isMedActiveOnDate(med, dateStr)) return;
+    med.doses.forEach((dose, idx)=>{
+      const label = med.freq === 'course' ? `${dose.label} · ${courseOccurrenceLabel(med, dateStr)}` : dose.label;
+      list.push({
+        key: `${med.id}__${idx}`,
+        medId: med.id,
+        name: med.name,
+        formLabel: med.formLabel,
+        period: dose.period,
+        label: label,
+        time: dose.time
+      });
+    });
+  });
+  return list;
+}
+
+function isDoseChecked(dateStr, doseKey){
+  return !!(doseLog[dateStr] && doseLog[dateStr][doseKey]);
+}
+async function toggleDose(dateStr, doseKey){
+  if(!doseLog[dateStr]) doseLog[dateStr] = {};
+  const willBeChecked = !doseLog[dateStr][doseKey];
+  doseLog[dateStr][doseKey] = willBeChecked;
+  renderToday(); // resposta imediata na tela
+
+  const userId = currentUser.id;
+  if(willBeChecked){
+    const { error } = await supabase.from('dose_log').upsert({
+      user_id: userId, date: dateStr, dose_key: doseKey, checked: true
+    }, { onConflict: 'user_id,date,dose_key' });
+    if(error) console.error('Falha ao salvar dose', error);
+  }else{
+    const { error } = await supabase.from('dose_log')
+      .delete()
+      .match({ user_id: userId, date: dateStr, dose_key: doseKey });
+    if(error) console.error('Falha ao remover dose', error);
+  }
+}
+
+/* ================= RENDER: HOJE ================= */
+function renderToday(){
+  const dateStr = fmtDate(currentDate);
+  const doses = getDosesForDate(dateStr);
+
+  const isToday = dateStr === fmtDate(new Date());
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+  const isYesterday = dateStr === fmtDate(yesterday);
+
+  document.getElementById('dateDay').textContent =
+    currentDate.toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long'});
+  document.getElementById('dateRel').textContent = isToday ? 'Hoje' : isYesterday ? 'Ontem' : '';
+
+  const list = document.getElementById('doseList');
+  list.innerHTML = '';
+
+  if(doses.length === 0){
+    list.innerHTML = `<div class="empty-day"><div class="big">Nenhum medicamento hoje</div>Nada agendado para este dia.</div>`;
+  }else{
+    PERIODS.forEach(p=>{
+      const items = doses.filter(d=>d.period===p.key);
+      if(items.length===0) return;
+      const section = document.createElement('div');
+      section.className = 'period';
+      section.innerHTML = `<div class="period-title">${p.label}</div>`;
+      items.forEach(dose=>{
+        const checked = isDoseChecked(dateStr, dose.key);
+        const row = document.createElement('div');
+        row.className = 'dose-row' + (checked ? ' done' : '');
+        row.innerHTML = `
+          <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M4 12l6 6L20 6"/></svg></div>
+          <div class="dose-info">
+            <div class="dose-name">${dose.name}</div>
+            <div class="dose-sub">${dose.formLabel} · ${dose.label}</div>
+          </div>
+          <div class="dose-time">${dose.time}</div>
+        `;
+        row.addEventListener('click', ()=>toggleDose(dateStr, dose.key));
+        section.appendChild(row);
+      });
+      list.appendChild(section);
+    });
+  }
+
+  const total = doses.length;
+  const done = doses.filter(d=>isDoseChecked(dateStr, d.key)).length;
+  document.getElementById('progressN').textContent = `${done} de ${total}`;
+  const ring = document.getElementById('ringProgress');
+  const circumference = 150.8;
+  const pct = total>0 ? done/total : 0;
+  ring.setAttribute('stroke-dashoffset', String(circumference * (1-pct)));
+
+  const celebrate = document.getElementById('celebrateMsg');
+  celebrate.classList.toggle('hidden', !(total>0 && done===total));
+}
+
+/* ================= RENDER: HISTÓRICO ================= */
+function renderHistory(){
+  const container = document.getElementById('historyList');
+  container.innerHTML = '';
+  const today = new Date();
+  for(let i=0; i<14; i++){
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    const dateStr = fmtDate(d);
+    const doses = getDosesForDate(dateStr);
+    const total = doses.length;
+    const done = doses.filter(x=>isDoseChecked(dateStr, x.key)).length;
+    const pct = total>0 ? Math.round((done/total)*100) : 0;
+
+    const row = document.createElement('div');
+    row.className = 'h-item';
+    row.innerHTML = `
+      <div class="h-date">
+        <div class="dow">${WEEKDAYS_SHORT[d.getDay()]}</div>
+        <div class="dnum">${d.getDate()} ${d.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</div>
+      </div>
+      <div class="h-bar-wrap"><div class="h-bar" style="width:${total>0?pct:0}%"></div></div>
+      <div class="h-count">${total>0 ? done+'/'+total : '—'}</div>
+    `;
+    container.appendChild(row);
+  }
+}
+
+/* ================= RENDER: AJUSTES ================= */
+function renderSettings(){
+  const chipsWrap = document.getElementById('weekdayChips');
+  chipsWrap.innerHTML = '';
+  WEEKDAYS.forEach((name, idx)=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (settings.weeklyDay===idx ? ' active' : '');
+    chip.textContent = name;
+    chip.addEventListener('click', async ()=>{
+      settings.weeklyDay = idx;
+      await saveSettings();
+      renderSettings();
+    });
+    chipsWrap.appendChild(chip);
+  });
+
+  const todayStr = fmtDate(new Date());
+  const altOn = isMedActiveOnDate(MEDICATIONS.find(m=>m.id==='testosterona'), todayStr);
+  const toggle = document.getElementById('altToggle');
+  toggle.classList.toggle('on', altOn);
+  toggle.onclick = async ()=>{
+    settings.altReferenceDate = altOn ? fmtDate(new Date(Date.now()+86400000)) : todayStr;
+    await saveSettings();
+    renderSettings();
+    renderToday();
+  };
+
+  const freqLabels = {
+    daily:'Todos os dias', weekly:'1x por semana', mwf:'Seg, qua e sex',
+    alternate:'Dias alternados', weekdays:'Seg e qui', course:'2 semanas (2 aplicações)'
+  };
+  const medFullList = document.getElementById('medFullList');
+  const manipulados = MEDICATIONS.filter(m=>m.category==='manipulado');
+  const farmacia = MEDICATIONS.filter(m=>m.category==='farmacia');
+  const renderGroup = (title, meds)=>`
+    <div class="mgroup-title">${title}</div>
+    ${meds.map(m=>`
+      <div class="med-list-item">
+        <span class="mname">${m.name}</span>
+        <span class="mfreq">${freqLabels[m.freq]}</span>
+      </div>
+    `).join('')}
+  `;
+  medFullList.innerHTML = renderGroup('Manipulados', manipulados) + renderGroup('Farmácia', farmacia);
+
+  const secondDose = (()=>{const d=new Date(settings.b12Start+'T00:00:00');d.setDate(d.getDate()+7);return d.toLocaleDateString('pt-BR',{day:'numeric',month:'long'});})();
+  document.getElementById('b12Info').textContent =
+    `1ª aplicação: ${parseDate(settings.b12Start).toLocaleDateString('pt-BR',{day:'numeric',month:'long'})} · 2ª aplicação: ${secondDose}`;
+  document.getElementById('b12ResetBtn').onclick = async ()=>{
+    settings.b12Start = fmtDate(new Date());
+    await saveSettings();
+    renderSettings();
+    renderToday();
+  };
+
+  document.getElementById('accountEmail').textContent = currentUser ? currentUser.email : '—';
+  document.getElementById('logoutBtn').onclick = async ()=>{
+    await supabase.auth.signOut();
+  };
+}
+
+/* ================= NAVEGAÇÃO ================= */
+function switchView(view){
+  currentView = view;
+  document.getElementById('view-today').classList.toggle('hidden', view!=='today');
+  document.getElementById('view-history').classList.toggle('hidden', view!=='history');
+  document.getElementById('view-settings').classList.toggle('hidden', view!=='settings');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  if(view==='today') renderToday();
+  if(view==='history') renderHistory();
+  if(view==='settings') renderSettings();
+}
+
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>switchView(btn.dataset.view));
+});
+document.getElementById('prevDay').addEventListener('click', ()=>{
+  currentDate.setDate(currentDate.getDate()-1);
+  renderToday();
+});
+document.getElementById('nextDay').addEventListener('click', ()=>{
+  currentDate.setDate(currentDate.getDate()+1);
+  renderToday();
+});
+
+/* ================= AUTENTICAÇÃO ================= */
+let authMode = 'login'; // 'login' | 'signup'
+
+function showLoading(show){
+  document.getElementById('loadingScreen').classList.toggle('hidden', !show);
+}
+function showAuthScreen(show){
+  document.getElementById('view-auth').classList.toggle('hidden', !show);
+}
+function showApp(show){
+  document.getElementById('app').classList.toggle('hidden', !show);
+}
+function setAuthError(msg){
+  const el = document.getElementById('authError');
+  if(msg){ el.textContent = msg; el.classList.remove('hidden'); }
+  else{ el.classList.add('hidden'); }
+}
+function setAuthNotice(msg){
+  const el = document.getElementById('authNotice');
+  if(msg){ el.textContent = msg; el.classList.remove('hidden'); }
+  else{ el.classList.add('hidden'); }
+}
+
+document.getElementById('authSwitchLink').addEventListener('click', ()=>{
+  authMode = authMode === 'login' ? 'signup' : 'login';
+  setAuthError(null); setAuthNotice(null);
+  document.getElementById('authSubmitBtn').textContent = authMode === 'login' ? 'Entrar' : 'Criar conta';
+  document.getElementById('authSub').textContent = authMode === 'login'
+    ? 'Entre para acompanhar seus medicamentos'
+    : 'Crie sua conta para começar';
+  document.getElementById('authSwitchText').textContent = authMode === 'login'
+    ? 'Ainda não tem conta?' : 'Já tem conta?';
+  document.getElementById('authSwitchLink').textContent = authMode === 'login'
+    ? 'Criar conta' : 'Entrar';
+});
+
+document.getElementById('authForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  setAuthError(null); setAuthNotice(null);
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const btn = document.getElementById('authSubmitBtn');
+  btn.disabled = true;
+
+  if(authMode === 'login'){
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if(error) setAuthError('E-mail ou senha incorretos.');
+  }else{
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if(error){
+      setAuthError(error.message.includes('already registered') ? 'Este e-mail já tem conta. Tente entrar.' : 'Não foi possível criar a conta.');
+    }else if(data.user && !data.session){
+      setAuthNotice('Conta criada! Verifique seu e-mail para confirmar antes de entrar.');
+    }
+  }
+  btn.disabled = false;
+});
+
+/* ================= INÍCIO ================= */
+async function startApp(){
+  showLoading(false);
+  showAuthScreen(false);
+  showApp(true);
+  await loadData();
+  renderToday();
+}
+
+supabase.auth.onAuthStateChange(async (event, session)=>{
+  if(session && session.user){
+    currentUser = session.user;
+    await startApp();
+  }else{
+    currentUser = null;
+    showLoading(false);
+    showApp(false);
+    showAuthScreen(true);
+  }
+});
+
+(async function init(){
+  const { data } = await supabase.auth.getSession();
+  if(data && data.session && data.session.user){
+    currentUser = data.session.user;
+    await startApp();
+  }else{
+    showLoading(false);
+    showAuthScreen(true);
+  }
+})();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
