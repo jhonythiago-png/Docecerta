@@ -10,6 +10,7 @@
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Docecerta">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -712,7 +713,7 @@ function startOfDay(d){ const c=new Date(d); c.setHours(0,0,0,0); return c; }
 /* ================= SUPABASE ================= */
 const SUPABASE_URL = 'https://awtphgzqlzdoggfesgkl.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3dHBoZ3pxbHpkb2dnZmVzZ2tsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2MzIwMzAsImV4cCI6MjEwNDIwODAzMH0.FBlyMlQQSVuBOAmdsFLynZN-UNiJLoujGDksJJfVIHU';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
 
 /* ================= PERSISTÊNCIA ================= */
@@ -766,7 +767,7 @@ async function saveDoseLog(){
 
 async function saveSettings(){
   const userId = currentUser.id;
-  const { error } = await supabase.from('user_settings').upsert({
+  const { error } = await sb.from('user_settings').upsert({
     user_id: userId,
     weekly_day: settings.weeklyDay,
     alt_reference_date: settings.altReferenceDate,
@@ -840,12 +841,12 @@ async function toggleDose(dateStr, doseKey){
 
   const userId = currentUser.id;
   if(willBeChecked){
-    const { error } = await supabase.from('dose_log').upsert({
+    const { error } = await sb.from('dose_log').upsert({
       user_id: userId, date: dateStr, dose_key: doseKey, checked: true
     }, { onConflict: 'user_id,date,dose_key' });
     if(error) console.error('Falha ao salvar dose', error);
   }else{
-    const { error } = await supabase.from('dose_log')
+    const { error } = await sb.from('dose_log')
       .delete()
       .match({ user_id: userId, date: dateStr, dose_key: doseKey });
     if(error) console.error('Falha ao remover dose', error);
@@ -992,7 +993,7 @@ function renderSettings(){
 
   document.getElementById('accountEmail').textContent = currentUser ? currentUser.email : '—';
   document.getElementById('logoutBtn').onclick = async ()=>{
-    await supabase.auth.signOut();
+    await sb.auth.signOut();
   };
 }
 
@@ -1065,10 +1066,10 @@ document.getElementById('authForm').addEventListener('submit', async (e)=>{
   btn.disabled = true;
 
   if(authMode === 'login'){
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await sb.auth.signInWithPassword({ email, password });
     if(error) setAuthError('E-mail ou senha incorretos.');
   }else{
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await sb.auth.signUp({ email, password });
     if(error){
       setAuthError(error.message.includes('already registered') ? 'Este e-mail já tem conta. Tente entrar.' : 'Não foi possível criar a conta.');
     }else if(data.user && !data.session){
@@ -1098,7 +1099,7 @@ const safetyTimeout = setTimeout(()=>{
   }
 }, 6000);
 
-supabase.auth.onAuthStateChange(async (event, session)=>{
+sb.auth.onAuthStateChange(async (event, session)=>{
   try{
     clearTimeout(safetyTimeout);
     if(session && session.user){
@@ -1119,7 +1120,7 @@ supabase.auth.onAuthStateChange(async (event, session)=>{
 
 (async function init(){
   try{
-    const { data, error } = await supabase.auth.getSession();
+    const { data, error } = await sb.auth.getSession();
     if(error) console.error('Docecerta: erro ao obter sessão', error);
     clearTimeout(safetyTimeout);
     if(data && data.session && data.session.user){
