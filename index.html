@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Docecerta</title>
+<title>Dosecerta</title>
 <meta name="description" content="Acompanhamento diário de medicamentos">
 <meta name="theme-color" content="#3F5C45">
 <link rel="manifest" href="manifest.json">
@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Docecerta">
+<meta name="apple-mobile-web-app-title" content="Dosecerta">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -389,7 +389,10 @@
 
   /* ---- Auth ---- */
   #view-auth{
-    min-height:100vh;
+    position:fixed; inset:0;
+    background:var(--paper);
+    z-index:40;
+    overflow-y:auto;
     display:flex; flex-direction:column;
     justify-content:center;
     padding:32px 24px;
@@ -487,21 +490,21 @@
 <body>
 
 <div id="loadingScreen">
-  <img src="icon-192.png" alt="Docecerta">
+  <img src="icon-192.png" alt="Dosecerta">
   <div class="spin"></div>
 </div>
 
 <div id="view-auth" class="hidden">
-  <img src="icon-192.png" class="auth-logo" alt="Docecerta">
-  <div class="auth-title">Docecerta</div>
-  <div class="auth-sub" id="authSub">Entre para acompanhar seus medicamentos</div>
+  <img src="icon-192.png" class="auth-logo" alt="Dosecerta">
+  <div class="auth-title">Dosecerta</div>
+  <div class="auth-sub" id="authSub">Entre com seu usuário para acompanhar seus medicamentos</div>
   <div class="auth-card">
     <div id="authError" class="auth-error hidden"></div>
     <div id="authNotice" class="auth-notice hidden"></div>
     <form id="authForm">
       <div class="auth-field">
-        <label>E-mail</label>
-        <input type="email" id="authEmail" autocomplete="email" required>
+        <label>Usuário</label>
+        <input type="text" id="authEmail" autocomplete="username" autocapitalize="none" placeholder="ex: poliana" required>
       </div>
       <div class="auth-field">
         <label>Senha</label>
@@ -521,7 +524,7 @@
   <!-- ================= HOJE ================= -->
   <div id="view-today">
     <header>
-      <div class="eyebrow"><img src="icon-192.png" class="app-logo" alt="">Docecerta</div>
+      <div class="eyebrow"><img src="icon-192.png" class="app-logo" alt="">Dosecerta</div>
       <h1>Poliana</h1>
       <div class="date-nav">
         <button id="prevDay" aria-label="Dia anterior">‹</button>
@@ -991,7 +994,7 @@ function renderSettings(){
     renderToday();
   };
 
-  document.getElementById('accountEmail').textContent = currentUser ? currentUser.email : '—';
+  document.getElementById('accountEmail').textContent = currentUser ? currentUser.email.split('@')[0] : '—';
   document.getElementById('logoutBtn').onclick = async ()=>{
     await sb.auth.signOut();
   };
@@ -1049,41 +1052,60 @@ document.getElementById('authSwitchLink').addEventListener('click', ()=>{
   setAuthError(null); setAuthNotice(null);
   document.getElementById('authSubmitBtn').textContent = authMode === 'login' ? 'Entrar' : 'Criar conta';
   document.getElementById('authSub').textContent = authMode === 'login'
-    ? 'Entre para acompanhar seus medicamentos'
-    : 'Crie sua conta para começar';
+    ? 'Entre com seu usuário para acompanhar seus medicamentos'
+    : 'Escolha um usuário e uma senha para começar';
   document.getElementById('authSwitchText').textContent = authMode === 'login'
     ? 'Ainda não tem conta?' : 'Já tem conta?';
   document.getElementById('authSwitchLink').textContent = authMode === 'login'
     ? 'Criar conta' : 'Entrar';
 });
 
+// O Supabase Auth exige um e-mail internamente, mas a pessoa só
+// digita um nome de usuário simples. Convertemos por baixo dos panos.
+const USERNAME_EMAIL_DOMAIN = 'dosecerta.app';
+function usernameToEmail(username){
+  const clean = username
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // remove acentos
+    .trim().toLowerCase().replace(/\s+/g,'');
+  return `${clean}@${USERNAME_EMAIL_DOMAIN}`;
+}
+
 document.getElementById('authForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
   setAuthError(null); setAuthNotice(null);
-  const email = document.getElementById('authEmail').value.trim();
+  const usernameRaw = document.getElementById('authEmail').value;
+  const email = usernameToEmail(usernameRaw);
   const password = document.getElementById('authPassword').value;
   const btn = document.getElementById('authSubmitBtn');
   btn.disabled = true;
 
   if(authMode === 'login'){
     const { error } = await sb.auth.signInWithPassword({ email, password });
-    if(error) setAuthError('E-mail ou senha incorretos.');
+    if(error) setAuthError('Usuário ou senha incorretos.');
   }else{
     const { data, error } = await sb.auth.signUp({ email, password });
     if(error){
-      setAuthError(error.message.includes('already registered') ? 'Este e-mail já tem conta. Tente entrar.' : 'Não foi possível criar a conta.');
+      setAuthError(error.message.includes('already registered') ? 'Esse usuário já existe. Tente entrar.' : 'Não foi possível criar a conta.');
     }else if(data.user && !data.session){
-      setAuthNotice('Conta criada! Verifique seu e-mail para confirmar antes de entrar.');
+      setAuthNotice('Conta criada! Já pode entrar com seu usuário e senha.');
     }
   }
   btn.disabled = false;
 });
 
 /* ================= INÍCIO ================= */
-async function startApp(){
-  showLoading(false);
-  showAuthScreen(false);
-  showApp(true);
+// Uma única função cuida de qual tela aparece, sempre definindo
+// os três estados juntos — nunca duas telas ficam visíveis ao
+// mesmo tempo.
+function setScreen(state){ // 'loading' | 'auth' | 'app'
+  showLoading(state === 'loading');
+  showAuthScreen(state === 'auth');
+  showApp(state === 'app');
+}
+
+async function startApp(user){
+  currentUser = user;
+  setScreen('app');
   await loadData();
   renderToday();
 }
@@ -1093,50 +1115,28 @@ async function startApp(){
 // exibição da tela de login depois de alguns segundos.
 const safetyTimeout = setTimeout(()=>{
   if(!document.getElementById('loadingScreen').classList.contains('hidden')){
-    console.warn('Docecerta: tempo limite de carregamento atingido, exibindo tela de login.');
-    showLoading(false);
-    showAuthScreen(true);
+    console.warn('Dosecerta: tempo limite de carregamento atingido, exibindo tela de login.');
+    setScreen('auth');
   }
 }, 6000);
 
+// onAuthStateChange já dispara sozinho com o estado atual assim
+// que é registrado (login existente, login novo ou nenhum login) —
+// não precisa de uma segunda checagem separada de sessão.
 sb.auth.onAuthStateChange(async (event, session)=>{
   try{
     clearTimeout(safetyTimeout);
     if(session && session.user){
-      currentUser = session.user;
-      await startApp();
+      await startApp(session.user);
     }else{
       currentUser = null;
-      showLoading(false);
-      showApp(false);
-      showAuthScreen(true);
+      setScreen('auth');
     }
   }catch(err){
-    console.error('Docecerta: erro no onAuthStateChange', err);
-    showLoading(false);
-    showAuthScreen(true);
+    console.error('Dosecerta: erro ao verificar login', err);
+    setScreen('auth');
   }
 });
-
-(async function init(){
-  try{
-    const { data, error } = await sb.auth.getSession();
-    if(error) console.error('Docecerta: erro ao obter sessão', error);
-    clearTimeout(safetyTimeout);
-    if(data && data.session && data.session.user){
-      currentUser = data.session.user;
-      await startApp();
-    }else{
-      showLoading(false);
-      showAuthScreen(true);
-    }
-  }catch(err){
-    console.error('Docecerta: erro na inicialização', err);
-    clearTimeout(safetyTimeout);
-    showLoading(false);
-    showAuthScreen(true);
-  }
-})();
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
