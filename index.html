@@ -1062,7 +1062,7 @@ document.getElementById('authSwitchLink').addEventListener('click', ()=>{
 
 // O Supabase Auth exige um e-mail internamente, mas a pessoa só
 // digita um nome de usuário simples. Convertemos por baixo dos panos.
-const USERNAME_EMAIL_DOMAIN = 'dosecerta.app';
+const USERNAME_EMAIL_DOMAIN = 'dosecerta.com';
 function usernameToEmail(username){
   const clean = username
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // remove acentos
