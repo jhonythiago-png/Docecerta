@@ -1,6 +1,6 @@
 {
-  "name": "Docecerta",
-  "short_name": "Docecerta",
+  "name": "Dosecerta",
+  "short_name": "Dosecerta",
   "description": "Acompanhamento diário de medicamentos",
   "start_url": "./index.html",
   "scope": "./",

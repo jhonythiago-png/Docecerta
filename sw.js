@@ -1,4 +1,4 @@
-const CACHE_NAME = 'docecerta-v1';
+const CACHE_NAME = 'dosecerta-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -24,17 +24,23 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Cache-first para o "casco" do app; a leitura/escrita de dados
-// continua sempre indo direto ao Supabase pela rede.
+// Cache-first apenas para os arquivos do próprio app (mesma origem).
+// Qualquer outra coisa — Supabase, CDN de fontes/bibliotecas, extensões
+// do navegador — nunca passa pelo cache, sempre vai direto pela rede.
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  if (event.request.url.includes('supabase.co')) return;
+  const req = event.request;
+  if (req.method !== 'GET') return;
+
+  let url;
+  try { url = new URL(req.url); } catch (e) { return; }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+  if (url.origin !== self.location.origin) return;
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request).then((response) => {
+    caches.match(req).then((cached) => {
+      return fetch(req).then((response) => {
         const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
         return response;
       }).catch(() => cached);
     })
