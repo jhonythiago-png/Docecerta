@@ -724,7 +724,7 @@ async function loadData(){
   const userId = currentUser.id;
 
   // dose_log: uma linha por dose marcada como feita
-  const { data: doseRows, error: doseErr } = await supabase
+  const { data: doseRows, error: doseErr } = await sb
     .from('dose_log')
     .select('date, dose_key')
     .eq('user_id', userId);
@@ -741,7 +741,7 @@ async function loadData(){
   }
 
   // user_settings: uma linha por usuário
-  const { data: settingsRow, error: settingsErr } = await supabase
+  const { data: settingsRow, error: settingsErr } = await sb
     .from('user_settings')
     .select('*')
     .eq('user_id', userId)
